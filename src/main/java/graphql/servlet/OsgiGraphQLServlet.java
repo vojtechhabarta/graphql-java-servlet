@@ -209,6 +209,11 @@ public class OsgiGraphQLServlet extends GraphQLServlet {
     }
 
     @Override
+    protected Instrumentation getInstrumentation(GraphQLContext context) {
+        return instrumentationProvider.getInstrumentation(context);
+    }
+
+    @Override
     protected GraphQLErrorHandler getGraphQLErrorHandler() {
         return errorHandler;
     }

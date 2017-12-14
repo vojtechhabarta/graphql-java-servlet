@@ -2,7 +2,6 @@ package graphql.servlet;
 
 import graphql.execution.ExecutionStrategy;
 import graphql.execution.instrumentation.Instrumentation;
-import graphql.execution.instrumentation.NoOpInstrumentation;
 import graphql.execution.preparsed.NoOpPreparsedDocumentProvider;
 import graphql.execution.preparsed.PreparsedDocumentProvider;
 import graphql.schema.GraphQLSchema;
@@ -60,9 +59,9 @@ public class SimpleGraphQLServlet extends GraphQLServlet {
         this.executionStrategyProvider = executionStrategyProvider;
 
         if (instrumentation == null) {
-            this.instrumentation = NoOpInstrumentation.INSTANCE;
+            this.instrumentationProvider = new NoOpInstrumentationProvider();
         } else {
-            this.instrumentation = instrumentation;
+            this.instrumentationProvider = new DefaultInstrumentationProvider(instrumentation);
         }
 
         if(errorHandler == null) {
@@ -95,7 +94,7 @@ public class SimpleGraphQLServlet extends GraphQLServlet {
 
         this.schemaProvider = builder.schemaProvider;
         this.executionStrategyProvider = builder.executionStrategyProvider;
-        this.instrumentation = builder.instrumentation;
+        this.instrumentationProvider = builder.instrumentationProvider;
         this.errorHandler = builder.errorHandler;
         this.contextBuilder = builder.contextBuilder;
         this.rootObjectBuilder = builder.rootObjectBuilder;
@@ -104,7 +103,7 @@ public class SimpleGraphQLServlet extends GraphQLServlet {
 
     private final GraphQLSchemaProvider schemaProvider;
     private final ExecutionStrategyProvider executionStrategyProvider;
-    private final Instrumentation instrumentation;
+    private final InstrumentationProvider instrumentationProvider;
     private final GraphQLErrorHandler errorHandler;
     private final GraphQLContextBuilder contextBuilder;
     private final GraphQLRootObjectBuilder rootObjectBuilder;
@@ -131,7 +130,7 @@ public class SimpleGraphQLServlet extends GraphQLServlet {
         private ExecutionStrategyProvider executionStrategyProvider = new DefaultExecutionStrategyProvider();
         private ObjectMapperConfigurer objectMapperConfigurer;
         private List<GraphQLServletListener> listeners;
-        private Instrumentation instrumentation = NoOpInstrumentation.INSTANCE;
+        private InstrumentationProvider instrumentationProvider = new NoOpInstrumentationProvider();
         private GraphQLErrorHandler errorHandler = new DefaultGraphQLErrorHandler();
         private GraphQLContextBuilder contextBuilder = new DefaultGraphQLContextBuilder();
         private GraphQLRootObjectBuilder rootObjectBuilder = new DefaultGraphQLRootObjectBuilder();
@@ -156,7 +155,12 @@ public class SimpleGraphQLServlet extends GraphQLServlet {
         }
 
         public Builder withInstrumentation(Instrumentation instrumentation) {
-            this.instrumentation = instrumentation;
+            this.instrumentationProvider = new DefaultInstrumentationProvider(instrumentation);
+            return this;
+        }
+
+        public Builder withInstrumentationProvider(InstrumentationProvider instrumentationProvider) {
+            this.instrumentationProvider = instrumentationProvider;
             return this;
         }
 
@@ -212,7 +216,12 @@ public class SimpleGraphQLServlet extends GraphQLServlet {
 
     @Override
     protected Instrumentation getInstrumentation() {
-        return instrumentation;
+        return instrumentationProvider.getInstrumentation();
+    }
+
+    @Override
+    protected Instrumentation getInstrumentation(GraphQLContext context) {
+        return instrumentationProvider.getInstrumentation(context);
     }
 
     @Override
